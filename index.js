@@ -37,12 +37,16 @@ async function run() {
     const usersCollection = database.collection("users")
 
     app.get("/products", async(req, res)=>{
-        const cursor = productsCollection.find();
-        const query = {};
+        // const cursor = productsCollection.find();
+        let query = {};
+        if(req.query?.email){
+          query = {owner_email: req.query.email}
+          // console.log(query)
+        }
         const options = {
           sort : {"insertedOn" : 1}
         }
-        const result = await cursor.toArray(query, options);
+        const result = await productsCollection.find(query, options).toArray();
         res.send(result)
     })
 
@@ -104,6 +108,30 @@ async function run() {
       }
       const result = await productsCollection.updateOne(filter, updatedDoc);
       res.send(result)
+    })
+
+    app.patch("/products/accept/:id", async(req, res)=>{
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)};
+      const updatedDoc={
+        $set: {
+          status: "accepted"
+        }
+      }
+      const result = await productsCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    })
+
+    app.patch("/products/reject/:id", async(req, res)=>{
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)};
+      const updatedDoc={
+        $set: {
+          status: "rejected"
+        }
+      }
+      const result = await productsCollection.updateOne(filter, updatedDoc);
+      res.send(result);
     })
 
     app.post("/products", async(req, res)=>{
@@ -187,6 +215,21 @@ async function run() {
       const result = await productsCollection.updateOne(query, incVote, option);
       res.send(result);
     })
+
+    app.post("/product/report/:id", async(req, res)=>{
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)};
+
+    })
+
+    // app.get("/products", async(req, res)=>{
+    //   let query = {};
+    //   if(req.query?.email){
+    //     query = {email: req.query.email}
+    //   }
+    //   const result = await productsCollection.find(query).toArray();
+    //   res.send(result)
+    // })
 
     // app.post("/product/downVote/:id", async(req, res)=>{
     //   const id = req.params.id;
