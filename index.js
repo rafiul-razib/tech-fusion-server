@@ -35,7 +35,9 @@ async function run() {
     const productsCollection = database.collection("products")
     const reviewCollection = database.collection("reviews")
     const usersCollection = database.collection("users")
+    const reportCollection = database.collection("reports")
 
+    
     app.get("/products", async(req, res)=>{
         // const cursor = productsCollection.find();
         let query = {};
@@ -43,6 +45,7 @@ async function run() {
           query = {owner_email: req.query.email}
           // console.log(query)
         }
+      
         const options = {
           sort : {"insertedOn" : 1}
         }
@@ -190,7 +193,7 @@ async function run() {
       const product_id = req.params.id;
       const review = req.body;
       const product_review = {product_id, ...review}
-      console.log(product_review)
+      // console.log(product_review)
 
       const result = await reviewCollection.insertOne(product_review)
       res.send(result)
@@ -218,9 +221,25 @@ async function run() {
 
     app.post("/product/report/:id", async(req, res)=>{
       const id = req.params.id;
-      const filter = {_id: new ObjectId(id)};
-
+      const query = {_id : new ObjectId(id)};
+      // console.log(query)
+      const incReport = {
+        $inc: {report : 1}
+      }
+      const option = {upsert : true}
+      const result = await productsCollection.updateOne(query, incReport, option);
+      res.send(result);
     })
+
+    app.get("/reports", async(req, res)=>{
+      const result = await reportCollection.find().toArray();
+      res.send(result)
+    })
+
+    // app.get("/users", async(req, res)=>{
+    //   const result = await usersCollection.find().toArray();
+    //   res.send(result)
+    // })
 
     // app.get("/products", async(req, res)=>{
     //   let query = {};
