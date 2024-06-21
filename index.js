@@ -64,6 +64,17 @@ async function run() {
       res.send(result);
     })
 
+    app.get("/user/role", async(req, res)=>{
+      let query = {};
+      if(req.query?.email){
+        query = {email : req.query.email}
+      }
+      console.log(query)
+      const result = await usersCollection.findOne(query);
+      console.log(result)
+      res.send(result);
+    })
+
     app.get("/users", async(req, res)=>{
       const result = await usersCollection.find().toArray();
       res.send(result)
