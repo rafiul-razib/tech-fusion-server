@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require ("cors");
+const jwt = require ("jsonwebtoken")
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 require('dotenv').config()
@@ -37,9 +38,54 @@ async function run() {
     const usersCollection = database.collection("users")
     const reportCollection = database.collection("reports")
 
+    // jwt apis
+
+    app.post("/jwt", async(req, res)=>{
+      const user = req.body;
+      console.log(user)
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: 36000000})
+      res.send({token})
+    })
+
+    // middlewares
+    const verifyToken = (req, res, next) =>{
+      console.log("inside middleware",req.headers.authorization)
+      if(!req.headers.authorization){
+        return res.status(401).send({message: "Forbidden Access!"})
+      }
+      const token = req.headers.authorization.split(" ")[1];
+      
+      // if(!token){
+      //   return res.status(401).send({message: "Forbidden Access!"})
+      // }
+      jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded)=>{
+        if(err){
+        return res.status(401).send({message: "Forbidden Access!"})}
+        else{
+          req.decoded = decoded;
+          next()
+        }
+      })
+    }
+
     
     app.get("/products", async(req, res)=>{
-        // const cursor = productsCollection.find();
+        
+        let query = {};
+        if(req.query?.email){
+          query = {owner_email: req.query.email}
+          // console.log(query)
+        }
+      
+        const options = {
+          sort : {"insertedOn" : 1}
+        }
+        const result = await productsCollection.find(query, options).toArray();
+        res.send(result)
+    })
+
+    app.get("/my-products", verifyToken, async(req, res)=>{
+        
         let query = {};
         if(req.query?.email){
           query = {owner_email: req.query.email}
@@ -75,7 +121,7 @@ async function run() {
       res.send(result);
     })
 
-    app.get("/users", async(req, res)=>{
+    app.get("/users", verifyToken, async(req, res)=>{
       const result = await usersCollection.find().toArray();
       res.send(result)
     })
